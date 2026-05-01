@@ -1478,6 +1478,24 @@ def get_sentences(session_id:str, text:str)->list|None:
         if not hard_list:
             hard_list = [text.strip()]
         hard_list = [s.strip() for s in hard_list if s.strip()]
+        # Move any leading SML escape chars (e.g. escaped [break]/[pause]) from
+        # the start of a segment to the end of the previous segment, so they
+        # stay with the preceding sentence rather than distorting the next one
+        _sml_range = (chr(sml_escape_tag), chr(0xF8FF))
+        fixed = []
+        for s in hard_list:
+            leading = ''
+            while s and _sml_range[0] <= s[0] <= _sml_range[1]:
+                leading += s[0]
+                s = s[1:]
+            s = s.strip()
+            if leading and fixed:
+                fixed[-1] = fixed[-1] + leading
+            if s:
+                fixed.append(s)
+            elif leading and not fixed:
+                fixed.append(leading)
+        hard_list = fixed
 
         # PASS 2 — soft punctuation
         soft_pattern = re.compile(
