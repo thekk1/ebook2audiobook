@@ -1242,7 +1242,7 @@ INTO A NEW TRAINING MODEL. YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
 
 def apply_pronunciation_overrides(text:str, session:dict, lang:str)->str:
     try:
-        upload_path = session.get('pronunciation_overrides') if isinstance(session, dict) else None
+        upload_path = session.get('pronunciation_overrides') if session is not None and hasattr(session, 'get') else None
         if not upload_path or not os.path.isfile(upload_path):
             return text
         try:
@@ -3171,7 +3171,10 @@ def convert_ebook(args:dict)->tuple:
             session['custom_model'] =  os.path.join(session['custom_model_dir'], args['custom_model']) if args['custom_model'] is not None else None
             session['fine_tuned'] = str(args['fine_tuned'])
             session['voice'] = args.get('voice', None)
-            session['pronunciation_overrides'] = args.get('pronunciation_overrides', None)
+            if args.get('pronunciation_overrides') is not None:
+                session['pronunciation_overrides'] = args.get('pronunciation_overrides')
+            elif 'pronunciation_overrides' not in session:
+                session['pronunciation_overrides'] = None
             session['xtts_temperature'] =  float(args['xtts_temperature'])
             session['xtts_length_penalty'] = float(args['xtts_length_penalty'])
             session['xtts_num_beams'] = int(args['xtts_num_beams'])
