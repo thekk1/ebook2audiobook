@@ -229,9 +229,9 @@ This has practical consequences for compound words:
 ```json
 {
   "deu": {
-    "Manager*":    "Mänätscher",
+    "Manager*":    "Mänädscher",
     "*phone":      "fohn",
-    "*[Mm]anage*": "Mänätsch",
+    "*[Mm]anage*": "Mänädsch",
     "[Cc]aptain":  "Käpten"
   }
 }
@@ -239,10 +239,10 @@ This has practical consequences for compound words:
 
 | Pattern | Replacement | Input | Output |
 |---|---|---|---|
-| `Manager*` | `Mänätscher` | `Der Manager kam` | `Der Mänätscher kam` |
-| `Manager*` | `Mänätscher` | `Managerposten` | `Mänätscherposten` (pass-through keeps `posten`) |
+| `Manager*` | `Mänätscher` | `Der Manager kam` | `Der Mänädscher kam` |
+| `Manager*` | `Mänätscher` | `Managerposten` | `Mänädscherposten` (pass-through keeps `posten`) |
 | `*phone` | `fohn` | `Smartphone klingelt` | `Smartfohn klingelt` |
-| `*[Mm]anage*` | `Mänätsch` | `Co-Management läuft` | `Co-Mänätschment läuft` |
+| `*[Mm]anage*` | `Mänädsch` | `Co-Management läuft` | `Co-Mänädschment läuft` |
 | `[Cc]aptain` | `Käpten` | `Captain says` / `the captain says` | `Käpten says` / `the Käpten says` |
 
 **Why `*` and `?` behave differently:** `*` represents "whatever happens to be at that position — keep it as-is in the output". `?` represents "exactly one character that is part of the word I'm respelling", so it is consumed by the replacement.
