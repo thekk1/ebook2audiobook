@@ -39,7 +39,7 @@ punctuation_switch = {
     '„': '"',   # German-style quote
 
     # Dashes, underscores & Hyphens that might cause weird pauses
-    '–': '.',  # En dash (Unicode U+2013)
+    '–': '—',   # En dash (U+2013) normalized to em dash (U+2014) for consistent handling
     "_": " ",   # U+005F LOW LINE
     "‗": " ",   # U+2017 DOUBLE LOW LINE
     "¯": " ",   # U+00AF MACRON (technically an overline)

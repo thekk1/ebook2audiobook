@@ -201,9 +201,51 @@ Or a flat dict, applied regardless of language:
 ```
 
 **Notes**
-- Matching is **case-sensitive** and uses word boundaries — `"Captain"` does **not** match `"captain"` or `"Captains"`. Add separate entries for plural or lowercase forms.
+- By default, matching is **case-sensitive** and uses word boundaries — `"Captain"` does **not** match `"captain"` or `"Captains"`. Add separate entries for plural or lowercase forms, or use a glob pattern (see below).
 - Longest keys are applied first, so `"Sergeant Major"` is replaced before `"Major"`.
 - The phonetic spelling should use the orthography of the **target language**, not IPA. For German output, write `Käpten` (not `/ˈkæptən/`).
+
+### Glob patterns
+
+For more flexible matching, keys may use a small set of glob meta-characters. The presence of any of `*`, `?`, or `[` in the key activates glob mode.
+
+| Meta-character | Meaning |
+|---|---|
+| `*` | matches zero or more word characters at this position; **preserved in the output** (pass-through) |
+| `?` | matches exactly one word character; **part of the replaced stem** (not preserved) |
+| `[abc]` | matches one of the listed characters (e.g. `[Cc]` for case-insensitivity); part of the replaced stem |
+
+Matching always stays **within word boundaries**. Wildcards never extend across whitespace or punctuation.
+
+**What counts as a word character?** A word character is any letter (including Unicode letters like `ä`, `ö`, `ü`, `é`), any digit, or the underscore `_`. Everything else — whitespace, hyphens, apostrophes, quotes, punctuation — is a **word boundary**, which means wildcards stop there.
+
+This has practical consequences for compound words:
+- `X-Ranger` is treated as two words separated by `-`. `Ranger*` matches the `Ranger` part; the `X-` prefix is untouched. `*Ranger` matches only when `Ranger` follows a letter/digit/underscore directly (e.g. `XRanger`, `CoRanger`), **not** when separated by `-`.
+- `X_Ranger` (with underscore) is one word — `*Ranger` would consume the `X_` prefix as part of the match.
+- `don't` is treated as two words (`don` + `t`) because the apostrophe is a boundary.
+
+**Examples**
+
+```json
+{
+  "deu": {
+    "Manager*":    "Mänädscher",
+    "*phone":      "fohn",
+    "*[Mm]anage*": "Mänädsch",
+    "[Cc]aptain":  "Käpten"
+  }
+}
+```
+
+| Pattern | Replacement | Input | Output |
+|---|---|---|---|
+| `Manager*` | `Mänätscher` | `Der Manager kam` | `Der Mänädscher kam` |
+| `Manager*` | `Mänätscher` | `Managerposten` | `Mänädscherposten` (pass-through keeps `posten`) |
+| `*phone` | `fohn` | `Smartphone klingelt` | `Smartfohn klingelt` |
+| `*[Mm]anage*` | `Mänädsch` | `Co-Management läuft` | `Co-Mänädschment läuft` |
+| `[Cc]aptain` | `Käpten` | `Captain says` / `the captain says` | `Käpten says` / `the Käpten says` |
+
+**Why `*` and `?` behave differently:** `*` represents "whatever happens to be at that position — keep it as-is in the output". `?` represents "exactly one character that is part of the word I'm respelling", so it is consumed by the replacement.
 
 > [!IMPORTANT]
 **Before to post an install or bug issue search carefully to the opened and closed issues TAB<br>
