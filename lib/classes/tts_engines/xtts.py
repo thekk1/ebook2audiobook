@@ -1,5 +1,6 @@
 from lib.classes.tts_engines.common.headers import *
 from lib.classes.tts_engines.common.preset_loader import load_engine_presets
+from lib.conf_lang import punctuation_split_soft_set
 
 def _has_loop_artifact(audio, rate: int, min_run: int = 4) -> bool:
     try:
@@ -192,8 +193,9 @@ class XTTSv2(TTSUtils, TTSRegistry, name='xtts'):
                         trim_audio_buffer = 0.006
                         if part.endswith("'"):
                             part = part[:-1]
-                        part = part.replace('.', ';\n')
-                        #part = part.replace(',', ';')
+                        if part.endswith("."):
+                            #part = part.replace('.', ';\n')
+                            part = part[:-1] + ';\n'
                         if self.params['current_voice'] is not None and self.params['current_voice'] in self.params['latent_embedding'].keys():
                             self.params['gpt_cond_latent'], self.params['speaker_embedding'] = self.params['latent_embedding'][self.params['current_voice']]
                         else:
@@ -242,7 +244,10 @@ class XTTSv2(TTSUtils, TTSRegistry, name='xtts'):
                                 self.audio_segments.append(part_tensor)
                                 del part_tensor
                                 if not re.search(r'\w$', part, flags=re.UNICODE) and part[-1] != '—':
-                                    silence_time = 0.5
+                                    if part[-1] in punctuation_split_soft_set:
+                                        silence_time = 0.25
+                                    else:
+                                        silence_time = 0.5
                                     break_tensor = torch.zeros(1, int(self.params['samplerate'] * silence_time))
                                     self.audio_segments.append(break_tensor.clone())
                             else:
