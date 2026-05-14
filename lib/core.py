@@ -1260,12 +1260,54 @@ def apply_pronunciation_overrides(text:str, session:dict, lang:str)->str:
                 overrides = data
         if not overrides:
             return text
+        import fnmatch as _fnmatch
+        def _pattern_and_repl(p:str, r:str)->tuple:
+            # Plain word (no glob meta-chars): match as whole word, no capture
+            if not any(c in p for c in ('*', '?', '[')):
+                return rf'\b{re.escape(p)}\b', r
+            # Outer '*' (not '?') becomes a pass-through capture group preserved in output.
+            # '?' and '[abc]' are part of the matched stem and get replaced.
+            head = ''
+            core = p
+            tail = ''
+            if core.startswith('*'):
+                head = r'(\w*)'
+                core = core[1:]
+            if core.endswith('*'):
+                tail = r'(\w*)'
+                core = core[:-1]
+            if any(c in core for c in ('*', '?', '[')):
+                body = _fnmatch.translate(core)
+                body = re.sub(r'^\(\?s:', '', body)
+                body = re.sub(r'\)\\Z$', '', body)
+                body = re.sub(r'\)\Z$', '', body)
+                body = body.replace('.*', r'\w*').replace('.', r'\w')
+            else:
+                body = re.escape(core)
+            left = '' if head else r'\b'
+            right = '' if tail else r'\b'
+            regex = f'{left}{head}{body}{tail}{right}'
+            # Replacement template: re-emit captured pass-through groups around the replacement
+            if head and tail:
+                repl_tpl = rf'\1{r}\2'
+            elif head:
+                repl_tpl = rf'\1{r}'
+            elif tail:
+                repl_tpl = rf'{r}\1'
+            else:
+                repl_tpl = r
+            return regex, repl_tpl
         # apply longest keys first to avoid partial matches eating shorter keys
         for word in sorted(overrides.keys(), key=len, reverse=True):
             replacement = overrides[word]
             if not word or not isinstance(replacement, str):
                 continue
-            text = re.sub(rf'\b{re.escape(word)}\b', replacement, text, flags=re.UNICODE)
+            try:
+                pattern, repl_tpl = _pattern_and_repl(word, replacement)
+                text = re.sub(pattern, repl_tpl, text, flags=re.UNICODE)
+            except re.error as e:
+                print(f'apply_pronunciation_overrides(): invalid pattern {word!r}: {e}')
+                continue
         return text
     except Exception as e:
         print(f'apply_pronunciation_overrides() error: {e}')
@@ -2371,8 +2413,17 @@ def normalize_text(text:str, lang:str, lang_iso1:str, tts_engine:str)->str:
     # Replace single newlines ("\n" or "\r") with spaces
     text = re.sub(r'\r\n|\r|\n', ' ', text)
     # Replace punctuations causing hallucinations
-    pattern = f"[{''.join(map(re.escape, punctuation_switch.keys()))}]"
-    text = re.sub(pattern, lambda match: punctuation_switch.get(match.group(), match.group()), text)
+    # punctuation_switch may contain multi-character keys (e.g. '...' or '. . .').
+    # Apply those first as literal string replacements (longest key first to avoid
+    # shorter keys consuming part of a longer match), then handle single-character
+    # keys via a character-class regex.
+    _multi = {k: v for k, v in punctuation_switch.items() if len(k) > 1}
+    _single = {k: v for k, v in punctuation_switch.items() if len(k) == 1}
+    for _k in sorted(_multi.keys(), key=len, reverse=True):
+        text = text.replace(_k, _multi[_k])
+    if _single:
+        pattern = f"[{''.join(map(re.escape, _single.keys()))}]"
+        text = re.sub(pattern, lambda match: _single.get(match.group(), match.group()), text)
     # remove unwanted chars
     chars_remove_table = str.maketrans({ch: ' ' for ch in chars_remove})
     text = text.translate(chars_remove_table)

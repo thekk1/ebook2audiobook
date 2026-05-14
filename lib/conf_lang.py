@@ -115,7 +115,7 @@ punctuation_list_set = set(punctuation_list)
 
 punctuation_split_hard = [
     # Western
-    '.', '!', '?', '…', '‽', '—',    # sentence terminators
+    '.', '!', '?', '‽', '—',    # sentence terminators
     # Arabic–Persian
     '؟',    # Arabic question mark (hard)
     # CJK (Chinese/Japanese/Korean)
@@ -134,7 +134,7 @@ punctuation_split_hard_set = set(punctuation_split_hard)
 
 punctuation_split_soft = [
     # Western
-    ',', ':', ';',
+    ',', ':', ';', '…',   # ellipsis is a stylistic pause, not a sentence terminator
     # Arabic–Persian
     '،',
     # CJK
