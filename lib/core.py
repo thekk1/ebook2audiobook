@@ -3306,6 +3306,11 @@ def convert_ebook(args:dict)->tuple:
                                 session['voice'] = final_voice_file
                             else:
                                 error = f'VoiceExtractor.extract_voice() failed! {msg}'
+                        else:
+                            # extracted voice already present from a previous ebook in batch mode;
+                            # point session['voice'] at the internal copy so downstream code that
+                            # requires the path to be under voices_dir works for subsequent ebooks.
+                            session['voice'] = final_voice_file
             if error is None:
                 if session['script_mode'] == NATIVE:
                     is_installed = check_programs('Calibre', 'ebook-convert', '--version')
